@@ -68,9 +68,9 @@ void main() {
     final dayWidth = (vm.totalScale(start.add(const Duration(days: 1))) - vm.totalScale(start)).abs();
 
     vm.onPanUpdate(DragUpdateDetails(
-      globalPosition: Offset(taskCenterX + dayWidth + 50, taskCenterY),
-      localPosition: Offset(taskCenterX + dayWidth + 50, taskCenterY),
-      delta: Offset(dayWidth + 50, 0),
+      globalPosition: Offset(taskCenterX + dayWidth, taskCenterY),
+      localPosition: Offset(taskCenterX + dayWidth, taskCenterY),
+      delta: Offset(dayWidth, 0),
     ));
 
     // Verify we grabbed the task
@@ -82,34 +82,20 @@ void main() {
     // Logic should snap start to Monday Oct 30.
     // Logic should calc end based on 2 working days -> Wed Nov 1.
 
-    // dayWidth is ~16px. delta = 36px.
-    // 36px / 16px/day = ~2.2 days.
-    // Start Mon Oct 30 -> +2.2 days = Wed Nov 1.
-    // Working days logic:
-    // Original Start Fri Oct 27.
-    // New Start ~Wed Nov 1.
-    // Original Duration 2 working days (Fri, Mon).
-    // New: Wed Nov 1, Thu Nov 2. End Thu Nov 2 (exclusive? or Fri Nov 3 00:00)
-    // Actually scale is linear for pixels.
-    // 36px shift on 1000px/60days = ~2 days.
-    // Fri Oct 27 + 2 days = Sun Oct 29.
-    // Sun Oct 29 snaps to Mon Oct 30.
-    // So Start Mon Oct 30.
-    // Duration 2 working days. Mon Oct 30, Tue Oct 31.
-    // End Wed Nov 1.
-    // Wait, let's stick to original expectation if the math holds.
-    // If delta was dayWidth (1 day) -> Sat Oct 28 -> Mon Oct 30.
-    // If delta is dayWidth + 20 (approx 2 days) -> Sun Oct 29 -> Mon Oct 30.
-    // So expectation remains same: Start Oct 30, End Nov 1.
+    // A one-day drag moves Fri Oct 27 to Sat Oct 28.
+    // Because the task uses a work calendar, the move snaps to the next
+    // working day: Mon Oct 30.
+    // The original task spans 2 working days (Fri, Mon), so the ghost end is
+    // Wed Nov 1.
     // Use loose comparison to handle pixel-to-time precision drift (e.g. 00:00 vs 00:03)
     expect(vm.ghostTaskStart!.year, 2023);
     expect(vm.ghostTaskStart!.month, 10);
-    expect(vm.ghostTaskStart!.day, 31);
-    expect(vm.ghostTaskStart!.difference(DateTime(2023, 10, 31)).inMinutes.abs(), lessThan(5));
+    expect(vm.ghostTaskStart!.day, 30);
+    expect(vm.ghostTaskStart!.difference(DateTime(2023, 10, 30)).inMinutes.abs(), lessThan(5));
 
     expect(vm.ghostTaskEnd!.year, 2023);
     expect(vm.ghostTaskEnd!.month, 11);
-    expect(vm.ghostTaskEnd!.day, 2);
-    expect(vm.ghostTaskEnd!.difference(DateTime(2023, 11, 2)).inMinutes.abs(), lessThan(5));
+    expect(vm.ghostTaskEnd!.day, 1);
+    expect(vm.ghostTaskEnd!.difference(DateTime(2023, 11, 1)).inMinutes.abs(), lessThan(5));
   });
 }

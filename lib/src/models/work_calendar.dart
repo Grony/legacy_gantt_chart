@@ -22,10 +22,23 @@ class WorkCalendar {
     this.holidays = const {},
   });
 
+  DateTime _normalizeDate(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  DateTime _addCalendarDays(DateTime date, int days) => DateTime(
+        date.year,
+        date.month,
+        date.day + days,
+        date.hour,
+        date.minute,
+        date.second,
+        date.millisecond,
+        date.microsecond,
+      );
+
   /// Returns true if the given [date] is a working day.
   bool isWorkingDay(DateTime date) {
     if (weekendDays.contains(date.weekday)) return false;
-    final normalizedDate = DateTime(date.year, date.month, date.day);
+    final normalizedDate = _normalizeDate(date);
     if (holidays.contains(normalizedDate)) return false;
     return true;
   }
@@ -47,7 +60,7 @@ class WorkCalendar {
     int absDays = workingDays.abs();
 
     while (daysAdded < absDays) {
-      current = current.add(Duration(days: direction));
+      current = _addCalendarDays(current, direction);
       if (isWorkingDay(current)) {
         daysAdded++;
       }
@@ -67,14 +80,14 @@ class WorkCalendar {
     if (start.isAfter(end)) return -getWorkingDuration(end, start);
 
     int count = 0;
-    DateTime current = DateTime(start.year, start.month, start.day);
-    DateTime endDate = DateTime(end.year, end.month, end.day); // Normalize
+    DateTime current = _normalizeDate(start);
+    DateTime endDate = _normalizeDate(end);
 
     while (current.isBefore(endDate)) {
       if (isWorkingDay(current)) {
         count++;
       }
-      current = current.add(const Duration(days: 1));
+      current = _addCalendarDays(current, 1);
     }
     return count;
   }
@@ -87,7 +100,7 @@ class WorkCalendar {
 
     final ranges = <(DateTime, DateTime)>[];
     DateTime? nonWorkingStart;
-    DateTime iterDay = DateTime(start.year, start.month, start.day);
+    DateTime iterDay = _normalizeDate(start);
 
     while (iterDay.isBefore(end)) {
       final isWorking = isWorkingDay(iterDay);
@@ -101,7 +114,7 @@ class WorkCalendar {
         }
       }
 
-      iterDay = iterDay.add(const Duration(days: 1));
+      iterDay = _addCalendarDays(iterDay, 1);
     }
 
     if (nonWorkingStart != null) {

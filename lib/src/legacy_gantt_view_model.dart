@@ -622,6 +622,23 @@ class LegacyGanttViewModel extends ChangeNotifier {
 
   Map<String, List<ResourceBucket>> _baseResourceBuckets = {};
 
+  DateTime _normalizeDate(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  DateTime _addCalendarDays(
+    DateTime date,
+    int days,
+  ) =>
+      DateTime(
+        date.year,
+        date.month,
+        date.day + days,
+        date.hour,
+        date.minute,
+        date.second,
+        date.millisecond,
+        date.microsecond,
+      );
+
   /// Returns the resource buckets, potentially modified by the current drag operation.
   /// This ensures the histogram updates live as the user drags a task.
   Map<String, List<ResourceBucket>> get resourceBuckets {
@@ -642,13 +659,13 @@ class LegacyGanttViewModel extends ChangeNotifier {
     final originalEnd = _draggedTask!.end;
     final load = _draggedTask!.load;
 
-    DateTime current = DateTime(originalStart.year, originalStart.month, originalStart.day);
-    final endDay = DateTime(originalEnd.year, originalEnd.month, originalEnd.day);
+    DateTime current = _normalizeDate(originalStart);
+    final endDay = _normalizeDate(originalEnd);
 
     while (current.isBefore(endDay) || current.isAtSameMomentAs(endDay)) {
       if (_draggedTask!.usesWorkCalendar && _workCalendar != null) {
         if (!_workCalendar!.isWorkingDay(current)) {
-          current = current.add(const Duration(days: 1));
+          current = _addCalendarDays(current, 1);
           continue;
         }
       }
@@ -659,20 +676,20 @@ class LegacyGanttViewModel extends ChangeNotifier {
         final newLoad = b.totalLoad - load;
         currentResourceBuckets[index] = b.copyWith(totalLoad: max(0.0, newLoad));
       }
-      current = current.add(const Duration(days: 1));
+      current = _addCalendarDays(current, 1);
     }
 
     final ghostStart = _ghostTaskStart!;
     final ghostEnd = _ghostTaskEnd!;
 
-    current = DateTime(ghostStart.year, ghostStart.month, ghostStart.day);
-    final ghostEndDay = DateTime(ghostEnd.year, ghostEnd.month, ghostEnd.day);
+    current = _normalizeDate(ghostStart);
+    final ghostEndDay = _normalizeDate(ghostEnd);
 
     while (current.isBefore(ghostEndDay) || current.isAtSameMomentAs(ghostEndDay)) {
       if (_draggedTask!.usesWorkCalendar && _workCalendar != null) {
         final isWorking = _workCalendar!.isWorkingDay(current);
         if (!isWorking) {
-          current = current.add(const Duration(days: 1));
+          current = _addCalendarDays(current, 1);
           continue;
         }
       }
@@ -684,7 +701,7 @@ class LegacyGanttViewModel extends ChangeNotifier {
       } else {
         currentResourceBuckets.add(ResourceBucket(date: current, resourceId: resourceId, totalLoad: load));
       }
-      current = current.add(const Duration(days: 1));
+      current = _addCalendarDays(current, 1);
     }
 
     currentResourceBuckets.sort((a, b) => a.date.compareTo(b.date));
@@ -2373,7 +2390,7 @@ class LegacyGanttViewModel extends ChangeNotifier {
           final int workingDuration = _workCalendar!.getWorkingDuration(_originalTaskStart!, _originalTaskEnd!);
 
           while (!_workCalendar!.isWorkingDay(newStart)) {
-            newStart = newStart.add(const Duration(days: 1));
+            newStart = _addCalendarDays(newStart, 1);
           }
 
           newEnd = _workCalendar!.addWorkingDays(newStart, workingDuration);
